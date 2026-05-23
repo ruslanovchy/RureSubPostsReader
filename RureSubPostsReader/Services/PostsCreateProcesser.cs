@@ -1,6 +1,8 @@
 ﻿using Confluent.Kafka;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
+using RureSubPostsReader.Models.Dtos;
 using RureSubPostsWriter.Services;
 using System.Text.Json;
 
@@ -58,13 +60,23 @@ public class PostsCreateProcesser : BackgroundService
                     continue;
                 }
 
-                var post = JsonSerializer.Deserialize<PostDocument>(result.Message.Value);
+                var postDto = JsonSerializer.Deserialize<CreatePostDto>(result.Message.Value);
 
-                if (post == null)
+                if (postDto == null)
                 {
                     consumer.Commit(result);
                     continue;
                 }
+
+                var post = new PostDocument
+                {
+                    Id = postDto.Id,
+                    AuthorId = postDto.AuthorId,
+                    Author = postDto.Author,
+                    Title = postDto.Title,
+                    Content = BsonDocument.Parse(postDto.Content),
+                    PostedAt = postDto.PostedAt
+                };
 
                 await mongoService.Posts.InsertOneAsync(post, cancellationToken: stoppingToken);
                 consumer.Commit(result);

@@ -10,16 +10,23 @@ public class MongoDbInitializer(MongoDbService mongoDbService) : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var indexKeys = Builders<InboxMessage>.IndexKeys.Ascending(m => m.MessageId);
-        var indexOptions = new CreateIndexOptions
+        var inboxMessageIndexKeys = Builders<InboxMessage>.IndexKeys.Ascending(m => m.MessageId);
+        var inboxMessageIndexOptions = new CreateIndexOptions
         {
             Unique = true,
             ExpireAfter = TimeSpan.FromDays(7)
         };
 
-        var model = new CreateIndexModel<InboxMessage>(indexKeys, indexOptions);
+        var inboxMessageModel = new CreateIndexModel<InboxMessage>(inboxMessageIndexKeys, inboxMessageIndexOptions);
 
-        await mongoDbService.InboxMessages.Indexes.CreateOneAsync(model, cancellationToken: cancellationToken);
+        await mongoDbService.InboxMessages.Indexes.CreateOneAsync(inboxMessageModel, cancellationToken: cancellationToken);
+
+        var postIndexes = new List<CreateIndexModel<PostDocument>>
+        {
+            new(Builders<PostDocument>.IndexKeys.Descending(d => d.PostedAt))
+        };
+
+        await mongoDbService.Posts.Indexes.CreateManyAsync(postIndexes, cancellationToken: cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
