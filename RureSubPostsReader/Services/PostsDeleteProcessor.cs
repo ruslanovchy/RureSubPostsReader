@@ -1,0 +1,61 @@
+﻿using Confluent.Kafka;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using RureSubPostsReader.Models;
+using RureSubPostsReader.Models.Dtos;
+using System.Text.Json;
+
+namespace RureSubPostsReader.Services;
+
+public class PostsDeleteProcessor : BackgroundService
+{
+    private readonly ConsumerConfig config;
+    private readonly ILogger<PostsCreateProcessor> logger;
+    private readonly MongoDbService mongoService;
+
+    public PostsDeleteProcessor(ConsumerConfig config, ILogger<PostsCreateProcessor> logger, MongoDbService postsService)
+    {
+        this.config = config;
+        this.logger = logger;
+        this.mongoService = postsService;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        using var consumer = new ConsumerBuilder<string, string>(config).Build();
+
+        consumer.Subscribe("post-deleted");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                var result = consumer.Consume(stoppingToken);
+
+                if (result == null)
+                {
+                    consumer.Commit(result);
+                    continue;
+                }
+
+                var postDto = JsonSerializer.Deserialize<DeletePostDto>(result.Message.Value);
+
+                if (postDto == null)
+                {
+                    consumer.Commit(result);
+                    continue;
+                }
+
+                var filter = Builders<PostDocument>.Filter.Eq(d => d.Id, postDto.Id);
+
+                await mongoService.Posts.DeleteOneAsync(filter, stoppingToken);
+                consumer.Commit(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error while processing kafka message!");
+                continue;
+            }
+        }
+    }
+}

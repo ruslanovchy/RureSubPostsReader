@@ -3,18 +3,17 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 using RureSubPostsReader.Models.Dtos;
-using RureSubPostsWriter.Services;
 using System.Text.Json;
 
 namespace RureSubPostsReader.Services;
 
-public class PostsCreateProcesser : BackgroundService
+public class PostsCreateProcessor : BackgroundService
 {
     private readonly ConsumerConfig config;
-    private readonly ILogger<PostsCreateProcesser> logger;
+    private readonly ILogger<PostsCreateProcessor> logger;
     private readonly MongoDbService mongoService;
 
-    public PostsCreateProcesser(ConsumerConfig config, ILogger<PostsCreateProcesser> logger, MongoDbService postsService)
+    public PostsCreateProcessor(ConsumerConfig config, ILogger<PostsCreateProcessor> logger, MongoDbService postsService)
     {
         this.config = config;
         this.logger = logger;

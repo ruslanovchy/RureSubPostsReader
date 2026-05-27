@@ -2,7 +2,7 @@
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 
-namespace RureSubPostsWriter.Services;
+namespace RureSubPostsReader.Services;
 
 public class MongoDbService
 {

@@ -2,7 +2,7 @@
 
 public class CreatePostDto
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.CreateVersion7();
     public Guid AuthorId { get; set; }
     public AuthorDocument? Author { get; set; }
     public string Title { get; set; } = string.Empty;

@@ -1,6 +1,5 @@
 ﻿using MongoDB.Driver;
 using RureSubPostsReader.Models;
-using RureSubPostsWriter.Services;
 
 namespace RureSubPostsReader.Services;
 
@@ -23,7 +22,7 @@ public class MongoDbInitializer(MongoDbService mongoDbService) : IHostedService
 
         var postIndexes = new List<CreateIndexModel<PostDocument>>
         {
-            new(Builders<PostDocument>.IndexKeys.Descending(d => d.PostedAt))
+            new(Builders<PostDocument>.IndexKeys.Ascending(d => d.PostedAt).Ascending(d => d.Id))
         };
 
         await mongoDbService.Posts.Indexes.CreateManyAsync(postIndexes, cancellationToken: cancellationToken);

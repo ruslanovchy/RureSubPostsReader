@@ -5,7 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 using RureSubPostsReader.Services;
-using RureSubPostsWriter.Services;
+using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +13,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddSingleton<MongoDbService>();
-builder.Services.AddHostedService<PostsCreateProcesser>();
+builder.Services.AddHostedService<PostsCreateProcessor>();
+builder.Services.AddHostedService<PostsDeleteProcessor>();
+builder.Services.AddHostedService<PostChangePropertyProcessor>();
+builder.Services.AddHostedService<PostsLikedProcessor>();
 
 #region Kafka
 
@@ -99,6 +102,21 @@ builder.Services.AddHttpClient<HttpClient>(client => {
 
 #endregion
 
+#region Redis
+
+var redisConnectionString = builder.Configuration["Redis:ConnectionString"];
+
+if (string.IsNullOrEmpty(redisConnectionString))
+{
+    throw new Exception("Redis was not configured!");
+}
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    return ConnectionMultiplexer.Connect(redisConnectionString);
+});
+
+#endregion
 
 var app = builder.Build();
 
