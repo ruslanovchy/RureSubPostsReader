@@ -1,6 +1,6 @@
-﻿namespace RureSubPostsReader.Models.Dto;
+﻿namespace RureSubPostsReader.Models.Dtos;
 
-public class ChangeProfilePropertyDto
+public class ProfilePropertyChangedDto
 {
     public Guid ProfileId { get; set; }
     public Guid UserId { get; set; }

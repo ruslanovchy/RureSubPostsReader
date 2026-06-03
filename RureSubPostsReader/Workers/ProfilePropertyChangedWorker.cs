@@ -2,22 +2,22 @@
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
-using RureSubPostsReader.Models.Dto;
+using RureSubPostsReader.Models.Dtos;
 using RureSubPostsReader.Services;
 using System.Text.Json;
 
 namespace RureSubPostsReader.Workers;
 
-public class PostChangePropertyWorker : BackgroundService
+public class ProfilePropertyChangedWorker : BackgroundService
 {
     private readonly MongoDbService mongoService;
     private readonly ConsumerConfig config;
-    private readonly ILogger<PostChangePropertyWorker> logger;
+    private readonly ILogger<ProfilePropertyChangedWorker> logger;
 
-    public PostChangePropertyWorker(
+    public ProfilePropertyChangedWorker(
         [FromServices] MongoDbService mongoService,
         [FromServices] ConsumerConfig config,
-        [FromServices] ILogger<PostChangePropertyWorker> logger)
+        [FromServices] ILogger<ProfilePropertyChangedWorker> logger)
     {
         this.mongoService = mongoService;
         this.config = config;
@@ -50,7 +50,7 @@ public class PostChangePropertyWorker : BackgroundService
                 //    continue;
                 //}
 
-                var dto = JsonSerializer.Deserialize<ChangeProfilePropertyDto>(result.Message.Value);
+                var dto = JsonSerializer.Deserialize<ProfilePropertyChangedDto>(result.Message.Value);
 
                 if (dto == null)
                 {

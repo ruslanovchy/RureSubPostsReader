@@ -16,7 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<MongoDbService>();
 builder.Services.AddHostedService<PostsCreateWorker>();
 builder.Services.AddHostedService<PostsDeletedWorker>();
-builder.Services.AddHostedService<PostChangePropertyWorker>();
+builder.Services.AddHostedService<ProfilePropertyChangedWorker>();
 builder.Services.AddHostedService<PostsLikedWorker>();
 builder.Services.AddHostedService<PostsCommentedWorker>();
 
