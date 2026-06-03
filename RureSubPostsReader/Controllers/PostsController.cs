@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
@@ -28,6 +29,65 @@ public class PostsController : Controller
         RedisValue[] results = await db.HashGetAsync(hashKey, fields);
 
         return [.. results.Select(v => !v.IsNull)];
+    }
+
+    [HttpGet("/")]
+    public async Task<IActionResult> GetPost(
+        [FromServices] MongoDbService db,
+        [FromServices] IConnectionMultiplexer redis,
+        [FromQuery] Guid? id)
+    {
+        if (id == null)
+        {
+            return BadRequest();
+        }
+
+        var filter = Builders<PostDocument>.Filter.Eq(p => p.Id, id);
+
+        var post = await db.Posts.Find(filter).FirstOrDefaultAsync();
+
+        if (post == null)
+        {
+            return NotFound();
+        }
+
+        var result = new PostDto
+        {
+            Id = post.Id,
+            AuthorId = post.AuthorId,
+            Author = post.Author,
+            Title = post.Title,
+            Content = BsonTypeMapper.MapToDotNetValue(post.Content),
+            LikesCount = post.LikesCount,
+            CommentsCount = post.CommentsCount,
+            IsEdited = post.IsEdited,
+            PostedAt = post.PostedAt,
+            IsLiked = false
+        };
+
+        var redisDb = redis.GetDatabase();
+
+        var userIdRaw = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+
+        if (userIdRaw == null || string.IsNullOrEmpty(userIdRaw.Value) || !Guid.TryParse(userIdRaw.Value, out var userId))
+        {
+            return Ok(result);
+        }
+        string? userRedisId = await redisDb.StringGetAsync($"user:id:{userId}");
+
+        if (string.IsNullOrEmpty(userRedisId))
+        {
+            return Ok(result);
+        }
+
+        var postsIsLiked = await CheckLikesWithPipelineAsync(redisDb, userRedisId, [ result.Id ]);
+
+        if (postsIsLiked.Length == 1 && postsIsLiked[0])
+        {
+            result.IsLiked = true;
+        }
+
+        return Ok(result);
     }
 
     [HttpGet("/feed")]

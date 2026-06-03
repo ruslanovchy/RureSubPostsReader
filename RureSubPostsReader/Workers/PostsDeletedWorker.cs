@@ -3,17 +3,18 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 using RureSubPostsReader.Models.Dtos;
+using RureSubPostsReader.Services;
 using System.Text.Json;
 
-namespace RureSubPostsReader.Services;
+namespace RureSubPostsReader.Workers;
 
-public class PostsDeleteProcessor : BackgroundService
+public class PostsDeletedWorker : BackgroundService
 {
     private readonly ConsumerConfig config;
-    private readonly ILogger<PostsCreateProcessor> logger;
+    private readonly ILogger<PostsCreateWorker> logger;
     private readonly MongoDbService mongoService;
 
-    public PostsDeleteProcessor(ConsumerConfig config, ILogger<PostsCreateProcessor> logger, MongoDbService postsService)
+    public PostsDeletedWorker(ConsumerConfig config, ILogger<PostsCreateWorker> logger, MongoDbService postsService)
     {
         this.config = config;
         this.logger = logger;

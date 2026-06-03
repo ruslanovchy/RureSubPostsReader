@@ -3,17 +3,18 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 using RureSubPostsReader.Models.Dtos;
+using RureSubPostsReader.Services;
 using System.Text.Json;
 
-namespace RureSubPostsReader.Services;
+namespace RureSubPostsReader.Workers;
 
-public class PostsLikedProcessor : BackgroundService
+public class PostsCommentedWorker : BackgroundService
 {
     private readonly ConsumerConfig config;
-    private readonly ILogger<PostsCreateProcessor> logger;
+    private readonly ILogger<PostsCreateWorker> logger;
     private readonly MongoDbService mongoService;
 
-    public PostsLikedProcessor(ConsumerConfig config, ILogger<PostsCreateProcessor> logger, MongoDbService postsService)
+    public PostsCommentedWorker(ConsumerConfig config, ILogger<PostsCreateWorker> logger, MongoDbService postsService)
     {
         this.config = config;
         this.logger = logger;
@@ -24,7 +25,7 @@ public class PostsLikedProcessor : BackgroundService
     {
         using var consumer = new ConsumerBuilder<string, string>(config).Build();
 
-        consumer.Subscribe("post-liked");
+        consumer.Subscribe(["post-commented", "comments-deleted"]);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -59,7 +60,7 @@ public class PostsLikedProcessor : BackgroundService
 
             try
             {
-                var dto = JsonSerializer.Deserialize<PostLikedDto>(result.Message.Value);
+                var dto = JsonSerializer.Deserialize<CounterChangeDto>(result.Message.Value);
 
                 if (dto == null)
                 {
@@ -68,7 +69,7 @@ public class PostsLikedProcessor : BackgroundService
                 }
 
                 var filter = Builders<PostDocument>.Filter.Eq(p => p.Id, dto.PostId);
-                var update = Builders<PostDocument>.Update.Inc(p => p.LikesCount, dto.Value);
+                var update = Builders<PostDocument>.Update.Inc(p => p.CommentsCount, dto.Value);
 
                 await mongoService.Posts.UpdateOneAsync(filter, update, cancellationToken: stoppingToken);
                 consumer.Commit(result);

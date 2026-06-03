@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 using RureSubPostsReader.Services;
+using RureSubPostsReader.Workers;
 using StackExchange.Redis;
 using System.Text;
 
@@ -13,10 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddSingleton<MongoDbService>();
-builder.Services.AddHostedService<PostsCreateProcessor>();
-builder.Services.AddHostedService<PostsDeleteProcessor>();
-builder.Services.AddHostedService<PostChangePropertyProcessor>();
-builder.Services.AddHostedService<PostsLikedProcessor>();
+builder.Services.AddHostedService<PostsCreateWorker>();
+builder.Services.AddHostedService<PostsDeletedWorker>();
+builder.Services.AddHostedService<PostChangePropertyWorker>();
+builder.Services.AddHostedService<PostsLikedWorker>();
+builder.Services.AddHostedService<PostsCommentedWorker>();
 
 #region Kafka
 
@@ -118,6 +120,21 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 #endregion
 
+#region Cors
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Development", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+#endregion
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -126,9 +143,14 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
     app.UseHttpsRedirection();
 }
+else
+{
+    app.UseCors("Development");
+}
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();

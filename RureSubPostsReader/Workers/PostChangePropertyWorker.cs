@@ -3,20 +3,21 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using RureSubPostsReader.Models;
 using RureSubPostsReader.Models.Dto;
+using RureSubPostsReader.Services;
 using System.Text.Json;
 
-namespace RureSubPostsReader.Services;
+namespace RureSubPostsReader.Workers;
 
-public class PostChangePropertyProcessor : BackgroundService
+public class PostChangePropertyWorker : BackgroundService
 {
     private readonly MongoDbService mongoService;
     private readonly ConsumerConfig config;
-    private readonly ILogger<PostChangePropertyProcessor> logger;
+    private readonly ILogger<PostChangePropertyWorker> logger;
 
-    public PostChangePropertyProcessor(
+    public PostChangePropertyWorker(
         [FromServices] MongoDbService mongoService,
         [FromServices] ConsumerConfig config,
-        [FromServices] ILogger<PostChangePropertyProcessor> logger)
+        [FromServices] ILogger<PostChangePropertyWorker> logger)
     {
         this.mongoService = mongoService;
         this.config = config;
