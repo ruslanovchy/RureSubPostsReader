@@ -39,7 +39,7 @@ public class PostsDeletedWorker : BackgroundService
                     continue;
                 }
 
-                var postDto = JsonSerializer.Deserialize<DeletePostDto>(result.Message.Value);
+                var postDto = JsonSerializer.Deserialize<PostDeleteRequestDto>(result.Message.Value);
 
                 if (postDto == null)
                 {

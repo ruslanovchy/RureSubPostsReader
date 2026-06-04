@@ -31,6 +31,25 @@ public class PostsController : Controller
         return [.. results.Select(v => !v.IsNull)];
     }
 
+    public static PostResponseDto GetPostResponseDto(PostDocument document) => new()
+    {
+        Id = document.Id,
+        AuthorId = document.AuthorId,
+        Author = document.Author,
+        Title = document.Title,
+        MediaFiles = document.MediaFiles?.Select(p => new MediaFileResponseDto
+        {
+            Id = p.Id,
+            Src = p.Path,
+            Type = p.Type
+        }).ToArray(),
+        Content = document.Content == null ? null : BsonTypeMapper.MapToDotNetValue(document.Content),
+        LikesCount = document.LikesCount,
+        CommentsCount = document.CommentsCount,
+        IsEdited = document.IsEdited,
+        PostedAt = document.PostedAt,
+    };
+
     [HttpGet("/")]
     public async Task<IActionResult> GetPost(
         [FromServices] MongoDbService db,
@@ -51,19 +70,7 @@ public class PostsController : Controller
             return NotFound();
         }
 
-        var result = new PostDto
-        {
-            Id = post.Id,
-            AuthorId = post.AuthorId,
-            Author = post.Author,
-            Title = post.Title,
-            Content = BsonTypeMapper.MapToDotNetValue(post.Content),
-            LikesCount = post.LikesCount,
-            CommentsCount = post.CommentsCount,
-            IsEdited = post.IsEdited,
-            PostedAt = post.PostedAt,
-            IsLiked = false
-        };
+        var result = GetPostResponseDto(post);
 
         var redisDb = redis.GetDatabase();
 
@@ -120,19 +127,7 @@ public class PostsController : Controller
             .ToListAsync();
 
         var result = posts
-            .Select(p => new PostDto
-            {
-                Id = p.Id,
-                AuthorId = p.AuthorId,
-                Author = p.Author,
-                Title = p.Title,
-                Content = BsonTypeMapper.MapToDotNetValue(p.Content),
-                LikesCount = p.LikesCount,
-                CommentsCount = p.CommentsCount,
-                IsEdited = p.IsEdited,
-                PostedAt = p.PostedAt,
-                IsLiked = false
-            })
+            .Select(GetPostResponseDto)
             .ToList();
 
         var redisDb = redis.GetDatabase();
@@ -198,19 +193,7 @@ public class PostsController : Controller
             .ToListAsync();
 
         var result = posts
-            .Select(p => new PostDto
-            {
-                Id = p.Id,
-                AuthorId = p.AuthorId,
-                Author = p.Author,
-                Title = p.Title,
-                Content = BsonTypeMapper.MapToDotNetValue(p.Content),
-                LikesCount = p.LikesCount,
-                CommentsCount = p.CommentsCount,
-                IsEdited = p.IsEdited,
-                PostedAt = p.PostedAt,
-                IsLiked = false
-            })
+            .Select(GetPostResponseDto)
             .ToList();
 
         var redisDb = redis.GetDatabase();
@@ -293,19 +276,7 @@ public class PostsController : Controller
             .ToList();
 
         var result = orderedPosts
-            .Select(p => new PostDto
-            {
-                Id = p.Id,
-                AuthorId = p.AuthorId,
-                Author = p.Author,
-                Title = p.Title,
-                Content = BsonTypeMapper.MapToDotNetValue(p.Content),
-                LikesCount = p.LikesCount,
-                CommentsCount = p.CommentsCount,
-                IsEdited = p.IsEdited,
-                PostedAt = p.PostedAt,
-                IsLiked = false
-            })
+            .Select(GetPostResponseDto)
             .ToList();
 
         var userIdRaw = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);

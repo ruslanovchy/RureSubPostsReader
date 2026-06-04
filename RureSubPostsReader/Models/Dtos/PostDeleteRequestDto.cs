@@ -1,6 +1,6 @@
 ﻿namespace RureSubPostsReader.Models.Dtos;
 
-public class DeletePostDto
+public class PostDeleteRequestDto
 {
     public Guid Id { get; set; }
 }

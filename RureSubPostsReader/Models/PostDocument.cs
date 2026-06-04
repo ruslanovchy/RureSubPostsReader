@@ -13,7 +13,8 @@ public class PostDocument
     public AuthorDocument? Author { get; set; }
     public string Title { get; set; } = string.Empty;
 
-    public BsonDocument Content { get; set; } = null!;
+    public MediaFileDocument[]? MediaFiles { get; set; }
+    public BsonDocument? Content { get; set; }
 
     public int LikesCount { get; set; }
     public int CommentsCount { get; set; }

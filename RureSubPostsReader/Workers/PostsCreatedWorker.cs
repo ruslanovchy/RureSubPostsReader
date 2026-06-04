@@ -60,7 +60,7 @@ public class PostsCreateWorker : BackgroundService
                     continue;
                 }
 
-                var postDto = JsonSerializer.Deserialize<CreatePostDto>(result.Message.Value);
+                var postDto = JsonSerializer.Deserialize<PostCreateRequestDto>(result.Message.Value);
 
                 if (postDto == null)
                 {
@@ -74,8 +74,14 @@ public class PostsCreateWorker : BackgroundService
                     AuthorId = postDto.AuthorId,
                     Author = postDto.Author,
                     Title = postDto.Title,
-                    Content = BsonDocument.Parse(postDto.Content),
-                    PostedAt = postDto.PostedAt
+                    Content = string.IsNullOrEmpty(postDto.Content) || postDto.Content == "null" ? null : BsonDocument.Parse(postDto.Content),
+                    PostedAt = postDto.PostedAt,
+                    MediaFiles = postDto.MediaFiles?.Select(p => new MediaFileDocument
+                    {
+                        Id = p.Id,
+                        Path = p.Path,
+                        Type = p.Type
+                    }).ToArray(),
                 };
 
                 await mongoService.Posts.InsertOneAsync(post, cancellationToken: stoppingToken);
