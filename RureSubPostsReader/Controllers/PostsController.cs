@@ -31,6 +31,41 @@ public class PostsController : Controller
         return [.. results.Select(v => !v.IsNull)];
     }
 
+    public async Task<string?[]> GetUsersRedisId(IDatabase db, Guid[] userIds)
+    {
+        var tasks = new Task<RedisValue>[userIds.Length];
+
+        for (int i = 0; i < tasks.Length; i++)
+        {
+            var key = $"user:id:{userIds[i]}";
+
+            tasks[i] = db.StringGetAsync(key);
+        }
+
+        var result = await Task.WhenAll(tasks);
+
+        return [.. result.Select(r => (string?)r)];
+    }
+
+    public async Task<bool[]> CheckFollowingsWithPipelineAsync(IDatabase db, string userId, Guid[] authorIds)
+    {
+        string?[] authorRedisIds = await GetUsersRedisId(db, authorIds);
+        var tasks = new Task<long?>[authorIds.Length];
+
+        string sortedSetKey = $"user:{userId}:following";
+
+        for (int i = 0; i < tasks.Length; i++)
+        {
+            var member = authorRedisIds[i];
+
+            tasks[i] = db.SortedSetRankAsync(sortedSetKey, member);
+        }
+
+        long?[] results = await Task.WhenAll(tasks);
+
+        return [.. results.Select(r => r.HasValue)];
+    }
+
     public static PostResponseDto GetPostResponseDto(PostDocument document) => new()
     {
         Id = document.Id,
@@ -48,6 +83,7 @@ public class PostsController : Controller
         CommentsCount = document.CommentsCount,
         IsEdited = document.IsEdited,
         PostedAt = document.PostedAt,
+        IsFollowed = false,
     };
 
     [HttpGet("/")]
@@ -87,11 +123,17 @@ public class PostsController : Controller
             return Ok(result);
         }
 
-        var postsIsLiked = await CheckLikesWithPipelineAsync(redisDb, userRedisId, [ result.Id ]);
+        var postIsLiked = await CheckLikesWithPipelineAsync(redisDb, userRedisId, [ result.Id ]);
+        var postIsFollowed = await CheckFollowingsWithPipelineAsync(redisDb, userRedisId, [ result.AuthorId ]);
 
-        if (postsIsLiked.Length == 1 && postsIsLiked[0])
+        if (postIsLiked.Length == 1 && postIsLiked[0])
         {
             result.IsLiked = true;
+        }
+
+        if (postIsFollowed.Length == 1 && postIsFollowed[0])
+        {
+            result.IsFollowed = true;
         }
 
         return Ok(result);
@@ -146,8 +188,9 @@ public class PostsController : Controller
         }
 
         var postsIsLiked = await CheckLikesWithPipelineAsync(redisDb, userRedisId, [.. result.Select(p => p.Id)]);
+        var postsIsFollowed = await CheckFollowingsWithPipelineAsync(redisDb, userRedisId, [.. result.Select(p => p.AuthorId)]);
 
-        if (postsIsLiked.Length != result.Count)
+        if (postsIsLiked.Length != result.Count || postsIsFollowed.Length != result.Count)
         {
             return Ok(result);
         }
@@ -155,6 +198,7 @@ public class PostsController : Controller
         for (int i = 0; i < postsIsLiked.Length; i++)
         {
             result[i].IsLiked = postsIsLiked[i];
+            result[i].IsFollowed = postsIsFollowed[i];
         }
 
         return Ok(result);

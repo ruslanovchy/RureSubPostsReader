@@ -126,7 +126,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Development", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost")
+        policy.WithOrigins("http://localhost:5173", "http://localhost", "http://ruresub.loca.lt")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

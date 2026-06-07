@@ -15,6 +15,7 @@ public class PostResponseDto
 
     public int LikesCount { get; set; }
     public bool IsLiked { get; set; }
+    public bool IsFollowed { get; set; }
     public int CommentsCount { get; set; }
     public bool IsEdited { get; set; }
     public DateTime PostedAt { get; set; }
