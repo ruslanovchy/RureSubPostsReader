@@ -106,16 +106,22 @@ builder.Services.AddHttpClient<HttpClient>(client => {
 
 #region Redis
 
-var redisConnectionString = builder.Configuration["Redis:ConnectionString"];
+var redisLikesConnectionString = builder.Configuration["Redis:LikesConnectionString"];
+var redisFollowersConnectionString = builder.Configuration["Redis:FollowersConnectionString"];
 
-if (string.IsNullOrEmpty(redisConnectionString))
+if (string.IsNullOrEmpty(redisLikesConnectionString) 
+    || string.IsNullOrEmpty(redisFollowersConnectionString))
 {
     throw new Exception("Redis was not configured!");
 }
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+builder.Services.AddKeyedSingleton<IConnectionMultiplexer>("likes", (sp, key) =>
 {
-    return ConnectionMultiplexer.Connect(redisConnectionString);
+    return ConnectionMultiplexer.Connect(redisLikesConnectionString);
+});
+builder.Services.AddKeyedSingleton<IConnectionMultiplexer>("followers", (sp, key) =>
+{
+    return ConnectionMultiplexer.Connect(redisFollowersConnectionString);
 });
 
 #endregion
@@ -134,6 +140,9 @@ builder.Services.AddCors(options =>
 });
 
 #endregion
+
+builder.Services.AddSingleton<ILikesService, LikesService>();
+builder.Services.AddSingleton<IFollowersService, FollowersService>();
 
 var app = builder.Build();
 
